@@ -1,0 +1,18 @@
+
+consule
+
+v1/services/serviceName
+
+
+
+service name  
+ip 
+port 
+desc 
+updatetime 
+createTime 
+ttl 
+
+
+
+启动可以指定配置文件

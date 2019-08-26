@@ -12,4 +12,10 @@ func registerRoutes(app *gin.Engine, conf *context.Config) {
 	{
 		apis.Test(searchPrefix, conf)
 	}
+
+	registerPrefix := app.Group("/apis")
+	{
+		apis.RegisterService(registerPrefix, conf)
+		apis.RegisterServer(registerPrefix, conf)
+	}
 }

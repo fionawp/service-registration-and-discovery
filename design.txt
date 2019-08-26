@@ -13,6 +13,30 @@ updatetime
 createTime 
 ttl 
 
+{
+"ip":"127.0.0.1",
+"port":"2222",
+"desc":"test",
+"ttl":5
+}
 
 
 启动可以指定配置文件
+
+
+curl --request PUT -d '{"code":"i love u"}' http://127.0.0.1:8500/v1/test/test
+curl -v 'http://127.0.0.1:8500/v1/test/test'
+
+
+curl http://localhost:8500/v1/kv/?recurse  [{"CreateIndex":97,"ModifyIndex":97,"Key":"web/key1","Flags":0,"Value":"dGVzdA=="},
+ {"CreateIndex":98,"ModifyIndex":98,"Key":"web/key2","Flags":42,"Value":"dGVzdA=="},
+ {"CreateIndex":99,"ModifyIndex":99,"Key":"web/sub/key3","Flags":0,"Value":"dGVzdA=="}]
+
+
+curl 127.0.0.1:8500/v1/kv/aa {"code":"iii"}
+
+curl -X put -d '{"code":"iii"}' 127.0.0.1:8500/v1/kv/aa
+
+
+起来一个consul agent
+./consul agent -dev -ui -node=consul-dev -client=0.0.0.0

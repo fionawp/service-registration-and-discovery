@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/fionawp/service-registration-and-discovery/common"
 	"github.com/fionawp/service-registration-and-discovery/context"
+	"github.com/fionawp/service-registration-and-discovery/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,4 +15,12 @@ func Test(router *gin.RouterGroup, conf *context.Config) {
 		fmt.Println("ha ha ha ha ha ha")
 		common.FormatResponse(c, 10000, "hello i am a test", nil)
 	})
+}
+
+func RegisterService(router *gin.RouterGroup, conf *context.Config) {
+	router.GET("/register/service", func(c *gin.Context) {
+		info := service.GetServerInfo(conf)
+		common.FormatResponse(c, 10000, "success", info)
+	})
+
 }

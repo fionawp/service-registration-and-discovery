@@ -11,6 +11,7 @@ import (
 	"github.com/kirinlabs/HttpRequest"
 	"log"
 	"time"
+	"github.com/fionawp/service-registration-and-discovery/param"
 )
 
 type ConsulInfo struct {
@@ -36,7 +37,17 @@ type Servers struct {
 	ServerKey string
 }
 
-func RegisterServer(conf *context.Config, serverInfo ServerInfo, serverName string) (ServerInfo, error) {
+func RegisterServer(conf *context.Config, serverParam param.ServerParam, serverName string) (ServerInfo, error) {
+	serverInfo := ServerInfo{
+		ServerName: serverParam.ServerName,
+		Ip: serverParam.Ip,
+		Port: serverParam.Port,
+		Desc: serverParam.Desc,
+		UpdateTime: time.Now(),
+		CreateTime: time.Now(),
+		Ttl: serverParam.Ttl,
+	}
+
 	obj1 := reflect.TypeOf(serverInfo)
 	obj2 := reflect.ValueOf(serverInfo)
 
@@ -45,8 +56,9 @@ func RegisterServer(conf *context.Config, serverInfo ServerInfo, serverName stri
 		data[obj1.Field(i).Name] = obj2.Field(i).Interface()
 	}
 
-	body, err := thirdApis.PutCall("/v1/kv/"+serverName, data)
-	conf.GetLog().Info(body)
+	body, err := thirdApis.PutCall(conf, "/v1/kv/"+serverName, data)
+	conf.GetLog().Info("put consul url: " + "/v1/kv/"+serverName)
+	conf.GetLog().Info("consul return body: " + (string)(body))
 
 	if err != nil {
 		return serverInfo, err

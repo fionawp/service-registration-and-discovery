@@ -7,11 +7,11 @@ import (
 	"reflect"
 
 	"encoding/base64"
+	"github.com/fionawp/service-registration-and-discovery/param"
 	//"fmt"
 	"github.com/kirinlabs/HttpRequest"
 	"log"
 	"time"
-	"github.com/fionawp/service-registration-and-discovery/param"
 )
 
 type ConsulInfo struct {
@@ -24,7 +24,7 @@ type ConsulInfo struct {
 }
 
 type ServerInfo struct {
-	ServerName string
+	ServiceName string
 	Ip         string
 	Port       string
 	Desc       string
@@ -37,15 +37,15 @@ type Servers struct {
 	ServerKey string
 }
 
-func RegisterServer(conf *context.Config, serverParam param.ServerParam, serverName string) (ServerInfo, error) {
+func RegisterServer(conf *context.Config, serverParam param.ServerParam) (ServerInfo, error) {
 	serverInfo := ServerInfo{
-		ServerName: serverParam.ServerName,
-		Ip: serverParam.Ip,
-		Port: serverParam.Port,
-		Desc: serverParam.Desc,
+		ServiceName: serverParam.ServiceName,
+		Ip:         serverParam.Ip,
+		Port:       serverParam.Port,
+		Desc:       serverParam.Desc,
 		UpdateTime: time.Now(),
 		CreateTime: time.Now(),
-		Ttl: serverParam.Ttl,
+		Ttl:        serverParam.Ttl,
 	}
 
 	obj1 := reflect.TypeOf(serverInfo)
@@ -56,15 +56,44 @@ func RegisterServer(conf *context.Config, serverParam param.ServerParam, serverN
 		data[obj1.Field(i).Name] = obj2.Field(i).Interface()
 	}
 
-	body, err := thirdApis.PutCall(conf, "/v1/kv/"+serverName, data)
-	conf.GetLog().Info("put consul url: " + "/v1/kv/"+serverName)
-	conf.GetLog().Info("consul return body: " + (string)(body))
+	_, err := thirdApis.PutCall(conf, "/v1/kv/"+serverParam.ServiceName+"/"+serverParam.Ip+":"+serverParam.Port, data)
 
 	if err != nil {
 		return serverInfo, err
 	}
 
 	return serverInfo, nil
+}
+
+func FindServerByServerNameServiceName(conf *context.Config, serverName, seviceName string) (*ServerInfo, error) {
+	body,err := thirdApis.GetCall("/v1/kv/"+seviceName+"/"+serverName, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(body) == 0 {
+		return nil, nil
+	}
+
+	consulInfo := make([]ConsulInfo, 0)
+	jsonErr := json.Unmarshal(body, &consulInfo)
+	if jsonErr != nil {
+		return nil, jsonErr
+	}
+
+	infoBytes, decodeError := base64.StdEncoding.DecodeString(consulInfo[0].Value)
+	if decodeError != nil {
+		return nil, decodeError
+	}
+
+	info := ServerInfo{}
+	jsonErr1 := json.Unmarshal(infoBytes, &info)
+	if jsonErr1 != nil {
+		return nil, jsonErr1
+	}
+
+	return &info, nil
 }
 
 func GetServerInfo(conf *context.Config) *ServerInfo {

@@ -1,7 +1,7 @@
 package param
 
 type ServerParam struct {
-	ServerName string
+	ServiceName string
 	Ip         string
 	Port       string
 	Desc       string

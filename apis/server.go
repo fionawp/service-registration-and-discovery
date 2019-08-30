@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//todo 参数判断
 func RegisterServer(router *gin.RouterGroup, conf *context.Config) {
 	router.POST("/register/server", func(c *gin.Context) {
 		var param serverParam.ServerParam
@@ -19,12 +20,48 @@ func RegisterServer(router *gin.RouterGroup, conf *context.Config) {
 			common.FormatResponseWithoutData(c, common.ParseParamErrorCode, common.ParseParamErrorMsg)
 			return
 		}
-		serviceName := param.Ip + ":" + param.Port
-		info, serviceErr := service.RegisterServer(conf, param, serviceName)
+		serviceName := param.ServiceName
+
+		serverName := param.Ip + ":" + param.Port
+
+		serverInfo, err := service.FindServerByServerNameServiceName(conf, serverName, serviceName)
+		if err != nil {
+			myLogger.Infof("register check server: " + err.Error())
+			common.FormatResponseWithoutData(c, common.FailureCode, common.FailToAddServerMsg)
+			return
+		}
+
+		if serverInfo != nil {
+			common.FormatResponseWithoutData(c, common.HasExistedCode, common.HasExistedMsg)
+			return
+		}
+
+		info, serviceErr := service.RegisterServer(conf, param)
 		if serviceErr != nil {
 			common.FormatResponseWithoutData(c, common.FailureCode, common.FailToAddServerMsg)
 			return
 		}
 		common.FormatResponse(c, common.SuccessCode, common.RegisterServerSuccessful, info)
+	})
+}
+
+func FindServerByServerName(router *gin.RouterGroup, conf *context.Config) {
+	router.GET("/find/server", func(c *gin.Context) {
+		serverName := c.Query("serverName")
+		serviceName := c.Query("serviceName")
+		serverInfo, err := service.FindServerByServerNameServiceName(conf, serverName, serviceName)
+
+		if err != nil {
+			conf.GetLog().Info("FindServerByServerName: " + err.Error())
+			common.FormatResponseWithoutData(c, common.FailureCode, common.SelectErrorMsg)
+			return
+		}
+
+		if serverInfo == nil {
+			common.FormatResponseWithoutData(c, common.FailureCode, common.ServerNotFoundMsg + serviceName + ":" + serverName)
+			return
+		}
+
+		common.FormatResponse(c, common.SuccessCode, common.SuccessfulMsg, serverInfo)
 	})
 }

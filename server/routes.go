@@ -17,5 +17,6 @@ func registerRoutes(app *gin.Engine, conf *context.Config) {
 	{
 		apis.RegisterService(registerPrefix, conf)
 		apis.RegisterServer(registerPrefix, conf)
+		apis.FindServerByServerName(registerPrefix, conf)
 	}
 }

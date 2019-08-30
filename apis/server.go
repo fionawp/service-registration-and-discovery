@@ -6,9 +6,9 @@ import (
 	serverParam "github.com/fionawp/service-registration-and-discovery/param"
 	"github.com/fionawp/service-registration-and-discovery/service"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
-//todo 参数判断
 func RegisterServer(router *gin.RouterGroup, conf *context.Config) {
 	router.POST("/register/server", func(c *gin.Context) {
 		var param serverParam.ServerParam
@@ -20,10 +20,9 @@ func RegisterServer(router *gin.RouterGroup, conf *context.Config) {
 			common.FormatResponseWithoutData(c, common.ParseParamErrorCode, common.ParseParamErrorMsg)
 			return
 		}
+
 		serviceName := param.ServiceName
-
 		serverName := param.Ip + ":" + param.Port
-
 		serverInfo, err := service.FindServerByServerNameServiceName(conf, serverName, serviceName)
 		if err != nil {
 			myLogger.Infof("register check server: " + err.Error())
@@ -36,7 +35,15 @@ func RegisterServer(router *gin.RouterGroup, conf *context.Config) {
 			return
 		}
 
-		info, serviceErr := service.RegisterServer(conf, param)
+		info, serviceErr := service.RegisterServer(conf, service.ServerInfo{
+			ServiceName: param.ServiceName,
+			Ip:         param.Ip,
+			Port:       param.Port,
+			Desc:       param.Desc,
+			UpdateTime: time.Now(),
+			CreateTime: time.Now(),
+			Ttl:        param.Ttl,
+		})
 		if serviceErr != nil {
 			common.FormatResponseWithoutData(c, common.FailureCode, common.FailToAddServerMsg)
 			return
@@ -63,5 +70,48 @@ func FindServerByServerName(router *gin.RouterGroup, conf *context.Config) {
 		}
 
 		common.FormatResponse(c, common.SuccessCode, common.SuccessfulMsg, serverInfo)
+	})
+}
+
+func HeartBeat(router *gin.RouterGroup, conf *context.Config) {
+	router.POST("/server/heartbeat", func(c *gin.Context) {
+		myLogger := conf.GetLog()
+		var param serverParam.ServerHeartBeatParam
+		err := c.BindJSON(&param)
+		if err != nil {
+			myLogger.Error(common.ParseParamErrorMsg + ":%s", err)
+			common.FormatResponseWithoutData(c, common.ParseParamErrorCode, common.ParseParamErrorMsg)
+			return
+		}
+
+		serviceName := param.ServiceName
+		serverName := param.Ip + ":" + param.Port
+		serverInfo, err1 := service.FindServerByServerNameServiceName(conf, serverName, serviceName)
+		if err1 != nil {
+			myLogger.Infof("heart check server: " + err1.Error())
+			common.FormatResponseWithoutData(c, common.FailureCode, common.FailToAddServerMsg)
+			return
+		}
+
+		if serverInfo == nil {
+			common.FormatResponseWithoutData(c, common.HasNotExistedCode, common.HasNotExistedMsg)
+			return
+		}
+		myLogger.Info("aaaaaaa :%v", serverInfo)
+
+		info, serviceErr := service.RegisterServer(conf, service.ServerInfo{
+			ServiceName: param.ServiceName,
+			Ip:         serverInfo.Ip,
+			Port:       serverInfo.Port,
+			Desc:       serverInfo.Desc,
+			UpdateTime: time.Now(),
+			CreateTime: serverInfo.CreateTime,
+			Ttl:        serverInfo.Ttl,
+		})
+		if serviceErr != nil {
+			common.FormatResponseWithoutData(c, common.FailureCode, common.FailToAddServerMsg)
+			return
+		}
+		common.FormatResponse(c, common.SuccessCode, common.RegisterServerSuccessful, info)
 	})
 }

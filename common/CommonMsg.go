@@ -16,3 +16,4 @@ const SelectErrorMsg = "something wrong when select it"
 
 //existed
 const HasExistedMsg = "it has existed"
+const HasNotExistedMsg = "it is not existed"

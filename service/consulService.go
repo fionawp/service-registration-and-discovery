@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"encoding/base64"
-	"github.com/fionawp/service-registration-and-discovery/param"
 	//"fmt"
 	"github.com/kirinlabs/HttpRequest"
 	"log"
@@ -37,16 +36,7 @@ type Servers struct {
 	ServerKey string
 }
 
-func RegisterServer(conf *context.Config, serverParam param.ServerParam) (ServerInfo, error) {
-	serverInfo := ServerInfo{
-		ServiceName: serverParam.ServiceName,
-		Ip:         serverParam.Ip,
-		Port:       serverParam.Port,
-		Desc:       serverParam.Desc,
-		UpdateTime: time.Now(),
-		CreateTime: time.Now(),
-		Ttl:        serverParam.Ttl,
-	}
+func RegisterServer(conf *context.Config, serverInfo ServerInfo) (ServerInfo, error) {
 
 	obj1 := reflect.TypeOf(serverInfo)
 	obj2 := reflect.ValueOf(serverInfo)
@@ -56,7 +46,7 @@ func RegisterServer(conf *context.Config, serverParam param.ServerParam) (Server
 		data[obj1.Field(i).Name] = obj2.Field(i).Interface()
 	}
 
-	_, err := thirdApis.PutCall(conf, "/v1/kv/"+serverParam.ServiceName+"/"+serverParam.Ip+":"+serverParam.Port, data)
+	_, err := thirdApis.PutCall(conf, "/v1/kv/"+serverInfo.ServiceName+"/"+serverInfo.Ip+":"+serverInfo.Port, data)
 
 	if err != nil {
 		return serverInfo, err

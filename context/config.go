@@ -26,6 +26,7 @@ type Config struct {
 	httpServerPort int
 	httpServerMode string
 	myLog          *logging.Logger
+	serviceName    string
 }
 
 // NewConfig() creates a new configuration entity by using two methods:
@@ -62,6 +63,10 @@ func (c *Config) SetValuesFromCliContext(ctx *cli.Context) error {
 
 	if ctx.GlobalIsSet("http-mode") || c.httpServerMode == "" {
 		c.httpServerMode = ctx.GlobalString("http-mode")
+	}
+
+	if ctx.GlobalIsSet("service-name") || c.serviceName == "" {
+		c.serviceName = ctx.GlobalString("service-name")
 	}
 
 	return nil
@@ -105,6 +110,10 @@ func (c *Config) HttpServerPort() int {
 // HttpServerMode returns the server mode.
 func (c *Config) HttpServerMode() string {
 	return c.httpServerMode
+}
+
+func (c *Config) ServiceName() string {
+	return c.serviceName
 }
 
 type Log struct {

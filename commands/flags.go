@@ -27,4 +27,10 @@ var GlobalFlags = []cli.Flag{
 		Value:  "",
 		EnvVar: "SERVICE_REGISTER_AND_DISCOVERY_MODE",
 	},
+	cli.StringFlag{
+		Name:   "service-name, s",
+		Usage:  "register a server for a service",
+		Value:  "firstService",
+		EnvVar: "SERVICE_REGISTER_AND_DISCOVERY_SERVICE_NAME",
+	},
 }

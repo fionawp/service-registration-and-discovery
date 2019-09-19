@@ -115,10 +115,12 @@ func GetServerInfo(conf *context.Config) *consulStruct.ServerInfo {
 }
 
 func AvailableServices(conf *context.Config) map[string][]consulStruct.ServerInfo{
-	info := conf.Services().Servers
+	info := conf.Services().GetServices()
+	/*
 	if info == nil {
 		info,_ = context.GetAvailableServers()
 	}
+	 */
 
 	return info
 }

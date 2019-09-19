@@ -26,7 +26,7 @@ var startFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   "http-host, i",
 		Usage:  "HTTP server host",
-		Value:  "",
+		Value:  "127.0.0.1",
 		EnvVar: "SERVICE_REGISTER_AND_DISCOVERY_HOST",
 	},
 	cli.StringFlag{

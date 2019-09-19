@@ -14,19 +14,34 @@ import (
 	"time"
 )
 
+type ServerMap map[string][]consulStruct.ServerInfo
 type AvailableSevers struct {
-	Servers map[string][]consulStruct.ServerInfo
+	Servers ServerMap
+	mutex sync.Mutex
 }
 
 func NewAvailableSevers() *AvailableSevers {
-	var l sync.Mutex
-	l.Lock()
-	defer l.Unlock()
-	info, _ := GetAvailableServers()
-	return &AvailableSevers{
-		Servers: info,
-	}
+	services := &AvailableSevers{}
+	services.PullServices()
+	return services
 }
+
+func (services *AvailableSevers) PullServices() {
+	info, _ := GetAvailableServers()
+	services.mutex.Lock()
+	defer services.mutex.Unlock()
+	services.Servers = info
+}
+
+func (services *AvailableSevers) GetServices() ServerMap {
+	services.mutex.Lock()
+	defer services.mutex.Unlock()
+	return services.Servers
+}
+
+
+
+
 
 func GetAvailableServers() (map[string][]consulStruct.ServerInfo, error) {
 	infos, err := FindAllServers()
@@ -131,7 +146,7 @@ func getCall(url string, paramMap map[string]string) ([]byte, error) {
 		}
 	}
 
-	host := "http://192.168.33.11:8500"
+	host := "http://127.0.0.1:8500"
 	resp, err := http.Get(host + url + paramString)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)

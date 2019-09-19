@@ -7,8 +7,6 @@ import (
 	"github.com/fionawp/service-registration-and-discovery/service"
 	"github.com/gin-gonic/gin"
 	"io"
-	"net"
-	"os"
 	"strconv"
 	"time"
 )
@@ -56,7 +54,7 @@ func Start(conf *context.Config) {
 	})
 
 	timeTicker(6, func(){
-		conf.SetServices()
+		conf.Services().PullServices()
 	})
 
 	app.Run(fmt.Sprintf("%s:%d", conf.HttpServerHost(), conf.HttpServerPort()))
@@ -64,6 +62,8 @@ func Start(conf *context.Config) {
 
 //todo get server ip;  gin port auto assign
 func GetIp() string {
+	return "127.0.0.1"
+	/*
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		fmt.Println(err)
@@ -79,7 +79,8 @@ func GetIp() string {
 			}
 		}
 	}
-	return ips[1]
+	return ips[0]
+	 */
 }
 
 //heartbeat ticker

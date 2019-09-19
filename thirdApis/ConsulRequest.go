@@ -9,7 +9,7 @@ import (
 )
 
 func GetConsulHost() string {
-	host := "http://192.168.33.11:8500"
+	host := "http://127.0.0.1:8500"
 	return host
 }
 

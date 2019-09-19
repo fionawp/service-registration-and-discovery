@@ -27,8 +27,7 @@ func RegisterService(router *gin.RouterGroup, conf *context.Config) {
 
 func TestServices(router *gin.RouterGroup, conf *context.Config) {
 	router.GET("/find/services", func(c *gin.Context) {
-		info := conf.Services().Servers
-		//myLog := conf.GetLog()
+		info := service.AvailableServices(conf)
 		common.FormatResponse(c, 10000, "success", info)
 	})
 }

@@ -113,3 +113,12 @@ func GetServerInfo(conf *context.Config) *consulStruct.ServerInfo {
 	myLogger.Info("consul service error: ")
 	return nil
 }
+
+func AvailableServices(conf *context.Config) map[string][]consulStruct.ServerInfo{
+	info := conf.Services().Servers
+	if info == nil {
+		info,_ = context.GetAvailableServers()
+	}
+
+	return info
+}

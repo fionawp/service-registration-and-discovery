@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -18,6 +19,9 @@ type AvailableSevers struct {
 }
 
 func NewAvailableSevers() *AvailableSevers {
+	var l sync.Mutex
+	l.Lock()
+	defer l.Unlock()
 	info, _ := GetAvailableServers()
 	return &AvailableSevers{
 		Servers: info,
@@ -90,7 +94,6 @@ func isAlive(server *consulStruct.ServerInfo) bool {
 	ttl := server.Ttl
 	updatedTime := server.UpdateTime
 	notUpdateTime := time.Now().Sub(updatedTime).Seconds()
-	//todo 正好五秒的时候，实际已经断开了 需要看下 4秒多的时候 返回是四秒还是五秒
 	if notUpdateTime <= (float64(ttl)) {
 		return true
 	}
@@ -130,7 +133,6 @@ func getCall(url string, paramMap map[string]string) ([]byte, error) {
 
 	host := "http://192.168.33.11:8500"
 	resp, err := http.Get(host + url + paramString)
-	println("aaaaaaa: " + host + url + paramString)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	return body, err

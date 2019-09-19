@@ -55,7 +55,7 @@ func Start(conf *context.Config) {
 		}
 	})
 
-	timeTicker(5, func(){
+	timeTicker(6, func(){
 		conf.SetServices()
 	})
 
@@ -94,4 +94,3 @@ func timeTicker(interval int, callback func()) {
 		}
 	}()
 }
-

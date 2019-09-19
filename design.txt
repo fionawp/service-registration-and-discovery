@@ -39,4 +39,42 @@ curl -X put -d '{"code":"iii"}' 127.0.0.1:8500/v1/kv/aa
 
 
 起来一个consul agent
-./consul agent -dev -ui -node=consul-dev -client=0.0.0.0
+/usr/local/adinf/consul/consul agent -dev -ui -node=consul-dev -client=0.0.0.0
+
+
+
+发现；
+serviceName
+
+
+
+http://192.168.33.11:8500/v1/kv/firstService?recurse
+
+是一个数组
+
+连接池
+三秒一更新
+连接的时候需要重试(连接的时候必须设置超时时间)
+
+传一个 serviceName 进来 获取所有的server
+遍历 servers  ttl 更新时间 仍然活着的 放到连接池
+
+
+1. 根据 serviceName 从连接池获取
+     如果是空
+        从 consul 里面取 过滤掉 dead ones 放到连接池 （该部分抽象出来 公用）
+
+     负载均衡待定,先随机取
+
+2.开一个协程 每三秒 重新获取一遍 给内存的map（连接池）重新赋值
+
+
+
+//todo 服务的ip和端口 怎样获取 port 自动分配 ？
+
+
+###问题：
+心跳 每五秒钟 更新一次时间
+每五秒钟更新一次内存
+
+换成6s更新一次内存 还是会有空白的时候  也会有返回来的时间10s才更新一次的情况

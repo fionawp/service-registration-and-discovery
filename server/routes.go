@@ -19,5 +19,6 @@ func registerRoutes(app *gin.Engine, conf *context.Config) {
 		apis.RegisterServer(registerPrefix, conf)
 		apis.FindServerByServerName(registerPrefix, conf)
 		apis.HeartBeat(registerPrefix, conf)
+		apis.TestServices(registerPrefix, conf)
 	}
 }

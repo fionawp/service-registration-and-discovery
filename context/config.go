@@ -27,6 +27,7 @@ type Config struct {
 	httpServerMode string
 	myLog          *logging.Logger
 	serviceName    string
+	availableServices *AvailableSevers
 }
 
 // NewConfig() creates a new configuration entity by using two methods:
@@ -42,7 +43,7 @@ func NewConfig(ctx *cli.Context) *Config {
 	c.appVersion = ctx.App.Version
 	c.SetValuesFromCliContext(ctx)
 	c.setLog()
-
+	c.SetServices()
 	return c
 }
 
@@ -70,6 +71,16 @@ func (c *Config) SetValuesFromCliContext(ctx *cli.Context) error {
 	}
 
 	return nil
+}
+
+
+
+func (c *Config) Services() *AvailableSevers {
+	return c.availableServices
+}
+
+func (c *Config) SetServices() {
+	c.availableServices = NewAvailableSevers()
 }
 
 // AppName returns the application name.

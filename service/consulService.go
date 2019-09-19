@@ -7,36 +7,16 @@ import (
 	"reflect"
 
 	"encoding/base64"
-	//"fmt"
+	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 	"github.com/kirinlabs/HttpRequest"
 	"log"
-	"time"
 )
-
-type ConsulInfo struct {
-	LockIndex   int
-	Key         string
-	Flags       int
-	Value       string
-	CreateIndex int
-	ModifyIndex int
-}
-
-type ServerInfo struct {
-	ServiceName string
-	Ip         string
-	Port       string
-	Desc       string
-	UpdateTime time.Time
-	CreateTime time.Time
-	Ttl        int
-}
 
 type Servers struct {
 	ServerKey string
 }
 
-func RegisterServer(conf *context.Config, serverInfo ServerInfo) (ServerInfo, error) {
+func RegisterServer(conf *context.Config, serverInfo consulStruct.ServerInfo) (consulStruct.ServerInfo, error) {
 
 	obj1 := reflect.TypeOf(serverInfo)
 	obj2 := reflect.ValueOf(serverInfo)
@@ -46,7 +26,7 @@ func RegisterServer(conf *context.Config, serverInfo ServerInfo) (ServerInfo, er
 		data[obj1.Field(i).Name] = obj2.Field(i).Interface()
 	}
 
-	_, err := thirdApis.PutCall(conf, "/v1/kv/"+serverInfo.ServiceName+"/"+serverInfo.Ip+":"+serverInfo.Port, data)
+	_, err := thirdApis.PutCall(conf, "/v1/kv/services/"+serverInfo.ServiceName+"/"+serverInfo.Ip+":"+serverInfo.Port, data)
 
 	if err != nil {
 		return serverInfo, err
@@ -55,8 +35,8 @@ func RegisterServer(conf *context.Config, serverInfo ServerInfo) (ServerInfo, er
 	return serverInfo, nil
 }
 
-func FindServerByServerNameServiceName(conf *context.Config, serverName, seviceName string) (*ServerInfo, error) {
-	body,err := thirdApis.GetCall("/v1/kv/"+seviceName+"/"+serverName, nil)
+func FindServerByServerNameServiceName(conf *context.Config, serverName, seviceName string) (*consulStruct.ServerInfo, error) {
+	body, err := thirdApis.GetCall("/v1/kv/services/"+seviceName+"/"+serverName, nil)
 
 	if err != nil {
 		return nil, err
@@ -66,7 +46,7 @@ func FindServerByServerNameServiceName(conf *context.Config, serverName, seviceN
 		return nil, nil
 	}
 
-	consulInfo := make([]ConsulInfo, 0)
+	consulInfo := make([]consulStruct.ConsulInfo, 0)
 	jsonErr := json.Unmarshal(body, &consulInfo)
 	if jsonErr != nil {
 		return nil, jsonErr
@@ -77,7 +57,7 @@ func FindServerByServerNameServiceName(conf *context.Config, serverName, seviceN
 		return nil, decodeError
 	}
 
-	info := ServerInfo{}
+	info := consulStruct.ServerInfo{}
 	jsonErr1 := json.Unmarshal(infoBytes, &info)
 	if jsonErr1 != nil {
 		return nil, jsonErr1
@@ -86,7 +66,7 @@ func FindServerByServerNameServiceName(conf *context.Config, serverName, seviceN
 	return &info, nil
 }
 
-func GetServerInfo(conf *context.Config) *ServerInfo {
+func GetServerInfo(conf *context.Config) *consulStruct.ServerInfo {
 	req := HttpRequest.NewRequest()
 	req.SetTimeout(5)
 	resp, err := req.Get("http://192.168.33.11:8500/v1/kv/v1/test/test", nil)
@@ -105,7 +85,7 @@ func GetServerInfo(conf *context.Config) *ServerInfo {
 			return nil
 		}
 
-		consulInfo := make([]ConsulInfo, 0)
+		consulInfo := make([]consulStruct.ConsulInfo, 0)
 		jsonErr := json.Unmarshal(body, &consulInfo)
 		//fmt.Println(string(body))
 		if jsonErr != nil {
@@ -120,7 +100,7 @@ func GetServerInfo(conf *context.Config) *ServerInfo {
 			return nil
 		}
 
-		info := ServerInfo{}
+		info := consulStruct.ServerInfo{}
 		jsonErr1 := json.Unmarshal(infoBytes, &info)
 		if jsonErr1 != nil {
 			log.Println(jsonErr1)

@@ -5,6 +5,7 @@ import (
 	"github.com/fionawp/service-registration-and-discovery/context"
 	serverParam "github.com/fionawp/service-registration-and-discovery/param"
 	"github.com/fionawp/service-registration-and-discovery/service"
+	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 	"github.com/gin-gonic/gin"
 	"time"
 )
@@ -35,7 +36,7 @@ func RegisterServer(router *gin.RouterGroup, conf *context.Config) {
 			return
 		}
 
-		info, serviceErr := service.RegisterServer(conf, service.ServerInfo{
+		info, serviceErr := service.RegisterServer(conf, consulStruct.ServerInfo{
 			ServiceName: param.ServiceName,
 			Ip:         param.Ip,
 			Port:       param.Port,
@@ -69,8 +70,22 @@ func FindServerByServerName(router *gin.RouterGroup, conf *context.Config) {
 			return
 		}
 
+		conf.GetLog().Info("xxxxxxx", isAlive(conf, serverInfo))
+		conf.GetLog().Info("")
+
 		common.FormatResponse(c, common.SuccessCode, common.SuccessfulMsg, serverInfo)
 	})
+}
+
+func isAlive(conf *context.Config, server *consulStruct.ServerInfo) bool {
+	ttl := server.Ttl
+	updatedTime := server.UpdateTime
+	notUpdateTime := time.Now().Sub(updatedTime).Seconds()
+	conf.GetLog().Info("notUpdateTime " , notUpdateTime)
+	if notUpdateTime <= (float64(ttl)) {
+		return true
+	}
+	return false
 }
 
 func HeartBeat(router *gin.RouterGroup, conf *context.Config) {
@@ -99,7 +114,7 @@ func HeartBeat(router *gin.RouterGroup, conf *context.Config) {
 		}
 		myLogger.Info("aaaaaaa :%v", serverInfo)
 
-		info, serviceErr := service.RegisterServer(conf, service.ServerInfo{
+		info, serviceErr := service.RegisterServer(conf, consulStruct.ServerInfo{
 			ServiceName: param.ServiceName,
 			Ip:         serverInfo.Ip,
 			Port:       serverInfo.Port,

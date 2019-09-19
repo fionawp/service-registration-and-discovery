@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 	"github.com/fionawp/service-registration-and-discovery/context"
 	"github.com/fionawp/service-registration-and-discovery/service"
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ func Start(conf *context.Config) {
 	registerRoutes(app, conf)
 
 	ip := GetIp()
-	thisServer := service.ServerInfo{
+	thisServer := consulStruct.ServerInfo{
 		ServiceName: conf.ServiceName(),
 		Ip:          ip,
 		Port:        strconv.Itoa(conf.HttpServerPort()),
@@ -46,12 +47,16 @@ func Start(conf *context.Config) {
 
 	//every ttl once heartbeat
 	ttl := thisServer.Ttl
-	heartBeat(ttl, func() {
+	timeTicker(ttl, func() {
 		thisServer.UpdateTime = time.Now()
 		_, modServerErr := service.RegisterServer(conf, thisServer)
 		if modServerErr != nil {
 			conf.GetLog().Error("heart beat err: " + modServerErr.Error())
 		}
+	})
+
+	timeTicker(5, func(){
+		conf.SetServices()
 	})
 
 	app.Run(fmt.Sprintf("%s:%d", conf.HttpServerHost(), conf.HttpServerPort()))
@@ -74,11 +79,11 @@ func GetIp() string {
 			}
 		}
 	}
-	return ips[0]
+	return ips[1]
 }
 
 //heartbeat ticker
-func heartBeat(interval int, callback func()) {
+func timeTicker(interval int, callback func()) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	go func() {
 		for {
@@ -89,3 +94,4 @@ func heartBeat(interval int, callback func()) {
 		}
 	}()
 }
+

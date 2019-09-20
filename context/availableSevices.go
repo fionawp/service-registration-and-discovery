@@ -15,36 +15,42 @@ import (
 )
 
 type ServerMap map[string][]consulStruct.ServerInfo
+
 type AvailableSevers struct {
 	Servers ServerMap
-	mutex sync.Mutex
+	mutex   sync.Mutex
 }
 
-func NewAvailableSevers() *AvailableSevers {
+func NewAvailableServices(conf *Config) *AvailableSevers {
 	services := &AvailableSevers{}
-	services.PullServices()
+	services.PullServices(conf)
 	return services
 }
 
-func (services *AvailableSevers) PullServices() {
-	info, _ := GetAvailableServers()
+func (services *AvailableSevers) PullServices(conf *Config) {
+	info, _ := GetAvailableServers(conf)
 	services.mutex.Lock()
 	defer services.mutex.Unlock()
 	services.Servers = info
 }
 
+//返回指针的话仍然存在线程安全的问题
+//返回值每次都要拷贝内存影响性能
+//实际使用中只需要返回某个服务的 server list 即可
 func (services *AvailableSevers) GetServices() ServerMap {
 	services.mutex.Lock()
 	defer services.mutex.Unlock()
 	return services.Servers
 }
 
+func (services *AvailableSevers) GetServiceByServiceName(serviceName string) []consulStruct.ServerInfo {
+	services.mutex.Lock()
+	defer services.mutex.Unlock()
+	return services.Servers[serviceName]
+}
 
-
-
-
-func GetAvailableServers() (map[string][]consulStruct.ServerInfo, error) {
-	infos, err := FindAllServers()
+func GetAvailableServers(conf *Config) (map[string][]consulStruct.ServerInfo, error) {
+	infos, err := FindAllServers(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +121,8 @@ func isAlive(server *consulStruct.ServerInfo) bool {
 	return false
 }
 
-func FindAllServers() ([]consulStruct.ConsulInfo, error) {
-	body, err := getCall("/v1/kv/services?recurse", nil)
+func FindAllServers(conf *Config) ([]consulStruct.ConsulInfo, error) {
+	body, err := getCall(conf.consulHost + "/v1/kv/services?recurse", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -146,9 +152,13 @@ func getCall(url string, paramMap map[string]string) ([]byte, error) {
 		}
 	}
 
-	host := "http://127.0.0.1:8500"
-	resp, err := http.Get(host + url + paramString)
+	resp, err := http.Get(url + paramString)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	return body, err
+}
+
+func AvailableServices(conf *Config) map[string][]consulStruct.ServerInfo {
+	info := conf.Services().GetServices()
+	return info
 }

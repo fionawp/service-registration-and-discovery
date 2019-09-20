@@ -33,4 +33,10 @@ var GlobalFlags = []cli.Flag{
 		Value:  "firstService",
 		EnvVar: "SERVICE_REGISTER_AND_DISCOVERY_SERVICE_NAME",
 	},
+	cli.StringFlag{
+		Name:   "consul-host, ch",
+		Usage:  "consul host",
+		Value:  "http://192.168.33.11:8500",
+		EnvVar: "SERVICE_REGISTER_AND_DISCOVERY_CONSUL_HOST",
+	},
 }

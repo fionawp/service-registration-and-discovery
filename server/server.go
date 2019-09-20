@@ -53,8 +53,9 @@ func Start(conf *context.Config) {
 		}
 	})
 
+	//update services map in memory
 	timeTicker(6, func(){
-		conf.Services().PullServices()
+		conf.Services().PullServices(conf)
 	})
 
 	app.Run(fmt.Sprintf("%s:%d", conf.HttpServerHost(), conf.HttpServerPort()))

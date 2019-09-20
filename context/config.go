@@ -28,6 +28,7 @@ type Config struct {
 	myLog          *logging.Logger
 	serviceName    string
 	availableServices *AvailableSevers
+	consulHost     string
 }
 
 // NewConfig() creates a new configuration entity by using two methods:
@@ -70,17 +71,23 @@ func (c *Config) SetValuesFromCliContext(ctx *cli.Context) error {
 		c.serviceName = ctx.GlobalString("service-name")
 	}
 
+	if ctx.GlobalIsSet("consul-host") || c.consulHost == "" {
+		c.consulHost = ctx.GlobalString("consul-host")
+	}
+
 	return nil
 }
 
-
+func (c *Config) ConsulHost() string {
+	return c.consulHost
+}
 
 func (c *Config) Services() *AvailableSevers {
 	return c.availableServices
 }
 
 func (c *Config) SetServices() {
-	c.availableServices = NewAvailableSevers()
+	c.availableServices = NewAvailableServices(c)
 }
 
 // AppName returns the application name.

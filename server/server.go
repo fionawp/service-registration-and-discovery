@@ -26,7 +26,7 @@ func Start(conf *context.Config) {
 	conf.GetLog().Info("i am start")
 	registerRoutes(app, conf)
 
-	ip := GetIp()
+	ip := conf.HttpServerHost()
 	thisServer := consulStruct.ServerInfo{
 		ServiceName: conf.ServiceName(),
 		Ip:          ip,
@@ -59,29 +59,6 @@ func Start(conf *context.Config) {
 	})
 
 	app.Run(fmt.Sprintf("%s:%d", conf.HttpServerHost(), conf.HttpServerPort()))
-}
-
-//todo get server ip;  gin port auto assign
-func GetIp() string {
-	return "127.0.0.1"
-	/*
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	ips := make([]string, 0)
-	for _, address := range addrs {
-		// if ip isLoopback
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				ips = append(ips, ipnet.IP.String())
-			}
-		}
-	}
-	return ips[0]
-	 */
 }
 
 //heartbeat ticker

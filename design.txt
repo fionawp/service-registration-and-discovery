@@ -70,8 +70,6 @@ http://192.168.33.11:8500/v1/kv/firstService?recurse
 
 
 
-//todo 服务的ip和端口 怎样获取 port 自动分配 ？
-
 
 ###问题：
 心跳 每五秒钟 更新一次时间
@@ -96,7 +94,7 @@ httpsdk
 call("test", "/a", params)
 
 1. service_router.Discover("test") ---> ip:port list
-2. load blance(list<>()) ---> ip:port
+2. load balance(list<>()) ---> ip:port
 
 
 http

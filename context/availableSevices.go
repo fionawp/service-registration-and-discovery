@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/fionawp/service-registration-and-discovery/common"
 	"github.com/fionawp/service-registration-and-discovery/consulStruct"
+	mygrpc "google.golang.org/grpc"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,6 +20,14 @@ type ServerMap map[string][]consulStruct.ServerInfo
 type AvailableSevers struct {
 	Servers ServerMap
 	mutex   sync.Mutex
+}
+
+func (services *AvailableSevers) addConnToConnPool() {
+	_, err := mygrpc.Dial("127.0.0.1:8089", mygrpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+
 }
 
 func NewAvailableServices(conf *Config) *AvailableSevers {

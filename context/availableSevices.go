@@ -18,16 +18,21 @@ import (
 type ServerMap map[string][]consulStruct.ServerInfo
 
 type AvailableSevers struct {
-	Servers ServerMap
-	mutex   sync.Mutex
+	Servers  ServerMap
+	mutex    sync.Mutex
+	connPool map[string]*mygrpc.ClientConn
 }
 
-func (services *AvailableSevers) addConnToConnPool() {
-	_, err := mygrpc.Dial("127.0.0.1:8089", mygrpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
+func (services *AvailableSevers) AddConnToConnPool(name string, conn *mygrpc.ClientConn) {
+	services.mutex.Lock()
+	defer services.mutex.Unlock()
+	services.connPool[name] = conn
+}
 
+func (services *AvailableSevers) GetConnFromConnPool(name string) *mygrpc.ClientConn {
+	services.mutex.Lock()
+	defer services.mutex.Unlock()
+	return services.connPool[name]
 }
 
 func NewAvailableServices(conf *Config) *AvailableSevers {
@@ -37,7 +42,7 @@ func NewAvailableServices(conf *Config) *AvailableSevers {
 }
 
 func (services *AvailableSevers) PullServices(conf *Config) {
-	info, _ := GetAvailableServers(conf)
+	info, _ := services.getAvailableServers(conf)
 	services.mutex.Lock()
 	defer services.mutex.Unlock()
 	services.Servers = info
@@ -58,7 +63,7 @@ func (services *AvailableSevers) GetServiceByServiceName(serviceName string) []c
 	return services.Servers[serviceName]
 }
 
-func GetAvailableServers(conf *Config) (map[string][]consulStruct.ServerInfo, error) {
+func (services *AvailableSevers) getAvailableServers(conf *Config) (map[string][]consulStruct.ServerInfo, error) {
 	infos, err := FindAllServers(conf)
 	if err != nil {
 		return nil, err
@@ -69,6 +74,15 @@ func GetAvailableServers(conf *Config) (map[string][]consulStruct.ServerInfo, er
 	for _, info := range infos {
 		server := decodeConsulValue(info.Value)
 		if isAlive(server) {
+			if server.ServerType == consulStruct.GrpcType {
+				connName := server.Ip + ":" + server.Port
+				conn, err := mygrpc.Dial(connName, mygrpc.WithInsecure())
+				if err != nil {
+					conf.GetLog().Errorf("did not connect: %v", err)
+				}
+				services.AddConnToConnPool(serviceName, conn)
+			}
+
 			serviceName = strings.Split(info.Key, "/")[1]
 			if _, ok := availableSevers[serviceName]; ok {
 				availableSevers[serviceName] = append(availableSevers[serviceName], consulStruct.ServerInfo{
@@ -131,7 +145,7 @@ func isAlive(server *consulStruct.ServerInfo) bool {
 }
 
 func FindAllServers(conf *Config) ([]consulStruct.ConsulInfo, error) {
-	body, err := getCall(conf.consulHost + "/v1/kv/services?recurse", nil)
+	body, err := getCall(conf.consulHost+"/v1/kv/services?recurse", nil)
 	if err != nil {
 		return nil, err
 	}

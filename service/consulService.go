@@ -2,13 +2,13 @@ package service
 
 import (
 	"errors"
+	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 	"github.com/fionawp/service-registration-and-discovery/context"
 	"github.com/fionawp/service-registration-and-discovery/thirdApis"
+	mygrpc "google.golang.org/grpc"
 	"math/rand"
 	"reflect"
 	"time"
-
-	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 )
 
 type Servers struct {
@@ -62,6 +62,27 @@ func HttpGetCall(conf *context.Config, serviceName string, url string, param map
 	return thirdApis.GetCall(conf, url, param)
 }
 
-/*func GrpcCall(conf *context.Config, serviceName string, function string, param map[string]interface{}) (string, error){
+func GrpcCall(conf *context.Config, serviceName string, function string, param map[string]interface{}) (*mygrpc.ClientConn, error) {
+	serverInfo := Discover(conf, serviceName)
+	if serverInfo.Ip == "" || serverInfo.Port == "" {
+		return nil, errors.New("please check " + serviceName + " service has no server available")
+	}
+	conn := conf.Services().GetConnFromConnPool(serverInfo.Ip + ":" + serverInfo.Port)
 
-}*/
+	//todo 判断是否可用
+	if conn == nil /*|| conn.GetState() != connectivity.State.READY*/ {
+		var err error
+		connName := serverInfo.Ip + ":" + serverInfo.Port
+		for i := 0; i < 3; i++ {
+			newConn, err := mygrpc.Dial(connName, mygrpc.WithInsecure())
+			if err == nil {
+				if conn == nil {
+					conf.Services().AddConnToConnPool(connName, newConn)
+				}
+				return newConn, nil
+			}
+		}
+		return nil, err
+	}
+	return conn, nil
+}

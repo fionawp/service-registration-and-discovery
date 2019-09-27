@@ -35,6 +35,7 @@ func Start(conf *context.Config) {
 		UpdateTime:  time.Now(),
 		CreateTime:  time.Now(),
 		Ttl:         5,
+		ServerType:  1,
 	}
 	//注册服务
 	_, serviceErr := service.RegisterServer(conf, thisServer)

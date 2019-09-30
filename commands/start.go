@@ -44,9 +44,11 @@ func startAction(ctx *cli.Context) error {
 		log.Fatal("Server port must be a positive integer")
 	}
 
-	fmt.Printf("Starting web server at %s:%d...\n", ctx.String("http-host"), ctx.Int("http-port"))
+	fmt.Printf("Starting web server at %s:%d...\n", conf.HttpServerHost(), conf.HttpServerPort())
 
-	server.Start(conf)
+	//choose to start which kind of server : http or grpc
+	server.StartHttpServer(conf)
+	//server.StartGrpcServer(conf)
 
 	fmt.Println("Done.")
 

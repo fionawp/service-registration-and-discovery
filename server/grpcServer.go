@@ -5,43 +5,41 @@ import (
 	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 	"github.com/fionawp/service-registration-and-discovery/context"
 	"github.com/fionawp/service-registration-and-discovery/service"
-	"github.com/gin-gonic/gin"
-	"io"
+	"google.golang.org/grpc"
+	"log"
+	"net"
 	"strconv"
 	"time"
 )
 
-// Start the REST API server using the configuration provided
-func StartHttpServer(conf *context.Config) {
-	if conf.HttpServerMode() != "" {
-		gin.SetMode(conf.HttpServerMode())
-	} else if conf.Debug() == false {
-		gin.SetMode(gin.ReleaseMode)
+// server is used to implement helloworld.GreeterServer.
+type server struct{}
+
+func StartGrpcServer(conf *context.Config) {
+	port := strconv.Itoa(conf.HttpServerPort())
+	lis, err := net.Listen("tcp", conf.HttpServerHost()+":"+port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
 	}
 
-	logFile := conf.LogFilePath()
-	gin.DefaultWriter = io.MultiWriter(logFile)
-	app := gin.Default()
-
-	conf.GetLog().Info("A http server start")
-	registerRoutes(app, conf)
-
+	fmt.Println("A grpc server start")
+	conf.GetLog().Info("A grpc server start")
 	ip := conf.HttpServerHost()
 	thisServer := consulStruct.ServerInfo{
 		ServiceName: conf.ServiceName(),
 		Ip:          ip,
 		Port:        strconv.Itoa(conf.HttpServerPort()),
-		Desc:        "this is a http server",
+		Desc:        "this is a grpc server",
 		UpdateTime:  time.Now(),
 		CreateTime:  time.Now(),
 		Ttl:         5,
-		ServerType:  1,
+		ServerType:  2,
 	}
 	//注册服务
 	_, serviceErr := service.RegisterServer(conf, thisServer)
 	if serviceErr != nil {
-		conf.GetLog().Error("register a http server exception {}", serviceErr.Error())
-		panic("register a http server exception")
+		conf.GetLog().Error("register  a grpc server exception {}", serviceErr.Error())
+		panic("register a grpc server exception")
 	}
 
 	//every ttl once heartbeat
@@ -55,22 +53,15 @@ func StartHttpServer(conf *context.Config) {
 	})
 
 	//update services map in memory
-	timeTicker(6, func(){
+	timeTicker(6, func() {
+		fmt.Println("server heartbeat")
 		conf.Services().PullServices(conf)
 	})
 
-	app.Run(fmt.Sprintf("%s:%d", conf.HttpServerHost(), conf.HttpServerPort()))
-}
+	fmt.Printf("%s:%d", conf.HttpServerHost(), conf.HttpServerPort())
 
-//heartbeat ticker
-func timeTicker(interval int, callback func()) {
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				callback()
-			}
-		}
-	}()
+	s := grpc.NewServer()
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

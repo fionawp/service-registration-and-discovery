@@ -26,6 +26,9 @@ type AvailableSevers struct {
 func (services *AvailableSevers) AddConnToConnPool(name string, conn *mygrpc.ClientConn) {
 	services.mutex.Lock()
 	defer services.mutex.Unlock()
+	if services.connPool == nil {
+		services.connPool = make(map[string]*mygrpc.ClientConn)
+	}
 	services.connPool[name] = conn
 }
 

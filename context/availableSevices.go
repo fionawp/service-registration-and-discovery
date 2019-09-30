@@ -95,6 +95,7 @@ func (services *AvailableSevers) getAvailableServers(conf *Config) (map[string][
 					Desc:        server.Desc,
 					UpdateTime:  server.UpdateTime,
 					CreateTime:  server.CreateTime,
+					ServerType:  server.ServerType,
 					Ttl:         server.Ttl,
 				})
 			} else {
@@ -105,6 +106,7 @@ func (services *AvailableSevers) getAvailableServers(conf *Config) (map[string][
 					Desc:        server.Desc,
 					UpdateTime:  server.UpdateTime,
 					CreateTime:  server.CreateTime,
+					ServerType:  server.ServerType,
 					Ttl:         server.Ttl,
 				})
 			}

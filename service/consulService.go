@@ -6,6 +6,7 @@ import (
 	"github.com/fionawp/service-registration-and-discovery/context"
 	"github.com/fionawp/service-registration-and-discovery/thirdApis"
 	mygrpc "google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"math/rand"
 	"reflect"
 	"time"
@@ -35,18 +36,38 @@ func RegisterServer(conf *context.Config, serverInfo consulStruct.ServerInfo) (c
 }
 
 //先不考虑负载均衡策略，随机
-func Discover(conf *context.Config, serviceName string) (serverInfo consulStruct.ServerInfo) {
+func Discover(conf *context.Config, serviceName string, serverType int) (serverInfo consulStruct.ServerInfo) {
 	services := conf.Services().GetServiceByServiceName(serviceName)
-	rand.Seed(time.Now().UnixNano())
+	conf.GetLog().Infof("111111 %v", services)
+	conf.GetLog().Infof("1111serverType $v", serverType)
 	size := len(services)
-	if size <= 0 {
+	if serverType != consulStruct.HttpType && serverType != consulStruct.GrpcType {
+		return
+	}
+
+	newServices := make([]consulStruct.ServerInfo, 0)
+	for i := 0; i < size; i ++ {
+		conf.GetLog().Infof("11111loopservertype", services[i].ServerType)
+		if serverType == services[i].ServerType {
+			newServices = append(newServices, services[i])
+		}
+	}
+
+	newSize := len(newServices)
+	conf.GetLog().Infof("11111newsize %v", newSize)
+	if newSize <= 0 {
 		return serverInfo
 	}
-	return services[rand.Intn(size)]
+	rand.Seed(time.Now().UnixNano())
+	a := rand.Intn(newSize)
+	conf.GetLog().Infof("333333 %v", newServices)
+	conf.GetLog().Infof("ssssssss %v", a)
+	b := newServices[a]
+	return b
 }
 
 func HttpPostCall(conf *context.Config, serviceName string, url string, param map[string]interface{}) ([]byte, error) {
-	serverInfo := Discover(conf, serviceName)
+	serverInfo := Discover(conf, serviceName, consulStruct.HttpType)
 	if serverInfo.Ip == "" || serverInfo.Port == "" {
 		return nil, errors.New("please check " + serviceName + " service has no server available")
 	}
@@ -55,22 +76,22 @@ func HttpPostCall(conf *context.Config, serviceName string, url string, param ma
 }
 
 func HttpGetCall(conf *context.Config, serviceName string, url string, param map[string]string) ([]byte, error) {
-	serverInfo := Discover(conf, serviceName)
+	serverInfo := Discover(conf, serviceName, consulStruct.HttpType)
 	if serverInfo.Ip == "" || serverInfo.Port == "" {
 		return nil, errors.New("please check " + serviceName + " service has no server available")
 	}
 	return thirdApis.GetCall(conf, url, param)
 }
 
-func GrpcCall(conf *context.Config, serviceName string, function string, param map[string]interface{}) (*mygrpc.ClientConn, error) {
-	serverInfo := Discover(conf, serviceName)
+func GrpcCall(conf *context.Config, serviceName string) (*mygrpc.ClientConn, error) {
+	serverInfo := Discover(conf, serviceName,consulStruct.GrpcType)
+	conf.GetLog().Info("this time, get a grpc service, ip: " + serverInfo.Ip + " port: " + serverInfo.Port)
 	if serverInfo.Ip == "" || serverInfo.Port == "" {
 		return nil, errors.New("please check " + serviceName + " service has no server available")
 	}
 	conn := conf.Services().GetConnFromConnPool(serverInfo.Ip + ":" + serverInfo.Port)
 
-	//todo 判断是否可用
-	if conn == nil /*|| conn.GetState() != connectivity.State.READY*/ {
+	if conn == nil || conn.GetState() != connectivity.Ready {
 		var err error
 		connName := serverInfo.Ip + ":" + serverInfo.Port
 		for i := 0; i < 3; i++ {

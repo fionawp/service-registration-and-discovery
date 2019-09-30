@@ -11,5 +11,6 @@ func registerRoutes(app *gin.Engine, conf *context.Config) {
 	registerPrefix := app.Group("/apis")
 	{
 		apis.TestServices(registerPrefix, conf)
+		apis.TestGrpcCall(registerPrefix, conf)
 	}
 }

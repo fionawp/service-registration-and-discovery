@@ -38,30 +38,24 @@ func RegisterServer(conf *context.Config, serverInfo consulStruct.ServerInfo) (c
 //先不考虑负载均衡策略，随机
 func Discover(conf *context.Config, serviceName string, serverType int) (serverInfo consulStruct.ServerInfo) {
 	services := conf.Services().GetServiceByServiceName(serviceName)
-	conf.GetLog().Infof("111111 %v", services)
-	conf.GetLog().Infof("1111serverType $v", serverType)
 	size := len(services)
 	if serverType != consulStruct.HttpType && serverType != consulStruct.GrpcType {
 		return
 	}
 
 	newServices := make([]consulStruct.ServerInfo, 0)
-	for i := 0; i < size; i ++ {
-		conf.GetLog().Infof("11111loopservertype", services[i].ServerType)
+	for i := 0; i < size; i++ {
 		if serverType == services[i].ServerType {
 			newServices = append(newServices, services[i])
 		}
 	}
 
 	newSize := len(newServices)
-	conf.GetLog().Infof("11111newsize %v", newSize)
 	if newSize <= 0 {
 		return serverInfo
 	}
 	rand.Seed(time.Now().UnixNano())
 	a := rand.Intn(newSize)
-	conf.GetLog().Infof("333333 %v", newServices)
-	conf.GetLog().Infof("ssssssss %v", a)
 	b := newServices[a]
 	return b
 }
@@ -83,8 +77,8 @@ func HttpGetCall(conf *context.Config, serviceName string, url string, param map
 	return thirdApis.GetCall(conf, url, param)
 }
 
-func GrpcCall(conf *context.Config, serviceName string) (*mygrpc.ClientConn, error) {
-	serverInfo := Discover(conf, serviceName,consulStruct.GrpcType)
+func GrpcConn(conf *context.Config, serviceName string) (*mygrpc.ClientConn, error) {
+	serverInfo := Discover(conf, serviceName, consulStruct.GrpcType)
 	conf.GetLog().Info("this time, get a grpc service, ip: " + serverInfo.Ip + " port: " + serverInfo.Port)
 	if serverInfo.Ip == "" || serverInfo.Port == "" {
 		return nil, errors.New("please check " + serviceName + " service has no server available")

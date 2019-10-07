@@ -13,6 +13,7 @@ import (
 
 // Start the REST API server using the configuration provided
 func StartHttpServer(conf *context.Config) {
+	fmt.Printf("Starting web server at %s:%d...\n", conf.HttpServerHost(), conf.HttpServerPort())
 	if conf.HttpServerMode() != "" {
 		gin.SetMode(conf.HttpServerMode())
 	} else if conf.Debug() == false {

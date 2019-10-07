@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"strconv"
+	"strings"
 	"time"
 )
 
@@ -24,19 +24,22 @@ func (s *server) SayHello(ctx goContext.Context, in *pb.HelloRequest) (*pb.Hello
 }
 
 func StartGrpcServer(conf *context.Config) {
-	port := strconv.Itoa(conf.HttpServerPort())
-	lis, err := net.Listen("tcp", conf.HttpServerHost()+":"+port)
+	lis, err := net.Listen("tcp", conf.HttpServerHost()+":")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+	lisAddr := lis.Addr().String()
 
-	fmt.Println("A grpc server start")
-	conf.GetLog().Info("A grpc server start")
-	ip := conf.HttpServerHost()
+	lisAddrArr := strings.Split(lisAddr, ":")
+	port := lisAddrArr[1]
+
+	fmt.Println("A grpc server start at " + lisAddr)
+	conf.GetLog().Info("A grpc server start " + lisAddr)
+	ip := lisAddrArr[0]
 	thisServer := consulStruct.ServerInfo{
 		ServiceName: conf.ServiceName(),
 		Ip:          ip,
-		Port:        strconv.Itoa(conf.HttpServerPort()),
+		Port:        port,
 		Desc:        "this is a grpc server",
 		UpdateTime:  time.Now(),
 		CreateTime:  time.Now(),
@@ -65,8 +68,6 @@ func StartGrpcServer(conf *context.Config) {
 		fmt.Println("server heartbeat")
 		conf.Services().PullServices(conf)
 	})
-
-	fmt.Printf("%s:%d", conf.HttpServerHost(), conf.HttpServerPort())
 
 	s := grpc.NewServer()
 	pb.RegisterGreeterServer(s, &server{})

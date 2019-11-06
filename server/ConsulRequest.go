@@ -1,14 +1,14 @@
-package thirdApis
+package server
 
 import (
 	"encoding/json"
-	"github.com/fionawp/service-registration-and-discovery/context"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 )
 
-func PostCall(conf *context.Config, url string, paramMap map[string]interface{}) ([]byte, error) {
+func PostCall(url string, paramMap map[string]interface{}) ([]byte, error) {
 	paramString := anyValuesParamMap2String(paramMap)
 	resp, err := http.Post(url, "application/json", strings.NewReader(paramString))
 	defer resp.Body.Close()
@@ -16,9 +16,9 @@ func PostCall(conf *context.Config, url string, paramMap map[string]interface{})
 	return body, err
 }
 
-func PutCall(conf *context.Config, url string, paramMap map[string]interface{}) ([]byte, error) {
+func PutCall(consulHost string, url string, paramMap map[string]interface{}) ([]byte, error) {
 	paramString := anyValuesParamMap2String(paramMap)
-	host := conf.ConsulHost()
+	host := consulHost
 	req,_ := http.NewRequest(http.MethodPut, host+url, strings.NewReader((string)(paramString)))
 	resp,respError := http.DefaultClient.Do(req)
 	if respError != nil {
@@ -26,10 +26,9 @@ func PutCall(conf *context.Config, url string, paramMap map[string]interface{}) 
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	myLogger := conf.GetLog()
-	myLogger.Info("api url: " + host + url)
-	myLogger.Info("return status: %v", resp)
-	myLogger.Info("return body: " + (string(body)))
+	log.Println("api url: " + host + url)
+	log.Printf("put a new service info, return status: %v", resp)
+	log.Println("put a new service info, return body: " + (string(body)))
 	return body, err
 }
 
@@ -38,7 +37,7 @@ func anyValuesParamMap2String(paramMap map[string]interface{}) string {
 	return (string)(paramByte)
 }
 
-func GetCall(conf *context.Config, url string, paramMap map[string]string) ([]byte, error) {
+func GetCall(url string, paramMap map[string]string) ([]byte, error) {
 	paramString := ""
 	if paramMap != nil {
 		for i, v := range paramMap {

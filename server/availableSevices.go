@@ -1,4 +1,4 @@
-package context
+package server
 
 import (
 	"encoding/base64"
@@ -38,14 +38,14 @@ func (services *AvailableSevers) GetConnFromConnPool(name string) *mygrpc.Client
 	return services.connPool[name]
 }
 
-func NewAvailableServices(conf *Config) *AvailableSevers {
+func NewAvailableServices(myServer MyServer) *AvailableSevers {
 	services := &AvailableSevers{}
-	services.PullServices(conf)
+	services.PullServices(myServer)
 	return services
 }
 
-func (services *AvailableSevers) PullServices(conf *Config) {
-	info, _ := services.getAvailableServers(conf)
+func (services *AvailableSevers) PullServices(myServer MyServer) {
+	info, _ := services.getAvailableServers(myServer)
 	services.mutex.Lock()
 	defer services.mutex.Unlock()
 	services.Servers = info
@@ -66,8 +66,8 @@ func (services *AvailableSevers) GetServiceByServiceName(serviceName string) []c
 	return services.Servers[serviceName]
 }
 
-func (services *AvailableSevers) getAvailableServers(conf *Config) (map[string][]consulStruct.ServerInfo, error) {
-	infos, err := FindAllServers(conf)
+func (services *AvailableSevers) getAvailableServers(myServer MyServer) (map[string][]consulStruct.ServerInfo, error) {
+		infos, err := FindAllServers(myServer)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (services *AvailableSevers) getAvailableServers(conf *Config) (map[string][
 				connName := server.Ip + ":" + server.Port
 				conn, err := mygrpc.Dial(connName, mygrpc.WithInsecure())
 				if err != nil {
-					conf.GetLog().Errorf("did not connect: %v", err)
+					log.Printf("did not connect: %v", err)
 				}
 				services.AddConnToConnPool(serviceName, conn)
 			}
@@ -149,8 +149,8 @@ func isAlive(server *consulStruct.ServerInfo) bool {
 	return false
 }
 
-func FindAllServers(conf *Config) ([]consulStruct.ConsulInfo, error) {
-	body, err := getCall(conf.consulHost+"/v1/kv/services?recurse", nil)
+func FindAllServers(myServer MyServer) ([]consulStruct.ConsulInfo, error) {
+	body, err := getCall(strings.Trim(myServer.ConsulHost, "/") + "/v1/kv/services?recurse", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,6 @@ func FindAllServers(conf *Config) ([]consulStruct.ConsulInfo, error) {
 	if jsonErr != nil {
 		return nil, jsonErr
 	}
-
 	return consulInfo, nil
 }
 
@@ -184,9 +183,4 @@ func getCall(url string, paramMap map[string]string) ([]byte, error) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	return body, err
-}
-
-func AvailableServices(conf *Config) map[string][]consulStruct.ServerInfo {
-	info := conf.Services().GetServices()
-	return info
 }

@@ -1,30 +1,17 @@
 package server
 
 import (
-	goContext "context"
 	"fmt"
 	"github.com/fionawp/service-registration-and-discovery/consulStruct"
-	"github.com/fionawp/service-registration-and-discovery/context"
-	pb "github.com/fionawp/service-registration-and-discovery/grpcTest"
-	"github.com/fionawp/service-registration-and-discovery/service"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"strings"
 	"time"
 )
 
-// server is used to implement helloworld.GreeterServer.
-type server struct{}
+func StartGrpcServer(myServer MyServer) net.Listener {
 
-// SayHello implements helloworld.GreeterServer
-func (s *server) SayHello(ctx goContext.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	log.Printf("Received: %v", in.GetName())
-	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
-}
-
-func StartGrpcServer(conf *context.Config) {
-	lis, err := net.Listen("tcp", conf.HttpServerHost()+":")
+	lis, err := net.Listen("tcp", myServer.Ip + ":")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -33,45 +20,43 @@ func StartGrpcServer(conf *context.Config) {
 	lisAddrArr := strings.Split(lisAddr, ":")
 	port := lisAddrArr[1]
 
-	fmt.Println("A grpc server start at " + lisAddr)
-	conf.GetLog().Info("A grpc server start " + lisAddr)
 	ip := lisAddrArr[0]
 	thisServer := consulStruct.ServerInfo{
-		ServiceName: conf.ServiceName(),
+		ServiceName: myServer.ServiceName,
 		Ip:          ip,
 		Port:        port,
 		Desc:        "this is a grpc server",
 		UpdateTime:  time.Now(),
 		CreateTime:  time.Now(),
-		Ttl:         5,
-		ServerType:  2,
+		Ttl:         myServer.Ttl,
+		ServerType:  consulStruct.GrpcType,
 	}
 	//注册服务
-	_, serviceErr := service.RegisterServer(conf, thisServer)
+	_, serviceErr := RegisterServer(strings.Trim(myServer.ConsulHost, "/"), thisServer)
 	if serviceErr != nil {
-		conf.GetLog().Error("register  a grpc server exception {}", serviceErr.Error())
-		panic("register a grpc server exception")
+		log.Fatalf("register  a grpc server exception %v", serviceErr.Error())
 	}
+
+	log.Println("A grpc server start at " + lisAddr)
 
 	//every ttl once heartbeat
 	ttl := thisServer.Ttl
 	timeTicker(ttl, func() {
 		thisServer.UpdateTime = time.Now()
-		_, modServerErr := service.RegisterServer(conf, thisServer)
+		_, modServerErr := RegisterServer(myServer.ConsulHost, thisServer)
 		if modServerErr != nil {
-			conf.GetLog().Error("heart beat err: " + modServerErr.Error())
+			log.Fatal("heart beat err: " + modServerErr.Error())
 		}
 	})
 
+	services := NewAvailableServices(myServer)
 	//update services map in memory
 	timeTicker(6, func() {
 		fmt.Println("server heartbeat")
-		conf.Services().PullServices(conf)
+		services.PullServices(myServer)
 	})
 
-	s := grpc.NewServer()
-	pb.RegisterGreeterServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	return lis
 }
+
+

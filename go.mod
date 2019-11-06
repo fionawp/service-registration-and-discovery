@@ -4,8 +4,6 @@ require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/golang/protobuf v1.3.2
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
-	github.com/urfave/cli v1.21.0
 	golang.org/x/net v0.0.0-20190918130420-a8b05e9114ab // indirect
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
 	golang.org/x/sys v0.0.0-20190919044723-0c1ff786ef13 // indirect

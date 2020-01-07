@@ -12,7 +12,7 @@ func ExampleStartHttpServer() {
 		Ttl:                5,
 		PullConsulInterval: 5,
 		ServiceName:        "httpTestServer",
-		ConsulHost:         "http://192.168.33.11:8500",
+		ConsulHost:         "http://127.0.0.1:8500",
 		Port:               "8087",
 		GinMode:            0,
 	}
@@ -21,10 +21,11 @@ func ExampleStartHttpServer() {
 	app, err := httpServer.StartHttpServer(myServer, services)
 	if err != nil {
 		fmt.Println(err.Error())
-	}
-
-	registerPrefix := app.Group("/apis")
-	{
-		apis.TestServices(registerPrefix, services)
+	} else {
+		//todo gin engine run 之前必须注册路由，如果把注册路由代码和run分开需要重新考虑注册路由的事情
+		registerPrefix := app.Group("/apis")
+		{
+			apis.TestServices(registerPrefix, services)
+		}
 	}
 }

@@ -23,7 +23,7 @@ func ExampleStartGrpcServer() {
 		Ttl:                5,
 		PullConsulInterval: 5,
 		ServiceName:        "myTestService",
-		ConsulHost:         "http://192.168.33.11:8500",
+		ConsulHost:         "http://127.0.0.1:8500",
 	}
 
 	lis := serverPak.StartGrpcServer(myServer)

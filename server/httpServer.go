@@ -6,6 +6,7 @@ import (
 	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
 	"time"
 )
 
@@ -45,12 +46,11 @@ func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine,
 	}
 
 	app := gin.Default()
-	err := app.Run(fmt.Sprintf("%s:%s",ip, port))
-	if err != nil {
-		log.Println(err.Error())
-		return app, err
-	}
-	log.Printf("Starting http server at %s:%s...\n", ip, port)
+	app.GET("/user/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		c.String(http.StatusOK, "Hello %s", name)
+	})
+
 	thisServer := consulStruct.ServerInfo{
 		ServiceName: serviceName,
 		Ip:          ip,
@@ -81,7 +81,12 @@ func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine,
 	timeTicker(6, func() {
 		services.PullServices(myServer)
 	})
-
+	err := app.Run(fmt.Sprintf("%s:%s",ip, port))
+	if err != nil {
+		log.Println(err.Error())
+		return app, err
+	}
+	log.Printf("Starting http server at %s:%s...\n", ip, port)
 	return app, nil
 }
 

@@ -18,14 +18,14 @@ func ExampleStartHttpServer() {
 	}
 
 	services := httpServer.NewAvailableServices(myServer)
-	app, err := httpServer.StartHttpServer(myServer, services)
+	server := httpServer.InitHttpServer()
+	app := server.GetEngine()
+	registerPrefix := app.Group("/apis")
+                {
+                        apis.TestServices(registerPrefix, services)
+                }
+	err := server.StartHttpServer(myServer, services)
 	if err != nil {
 		fmt.Println(err.Error())
-	} else {
-		//todo gin engine run 之前必须注册路由，如果把注册路由代码和run分开需要重新考虑注册路由的事情
-		registerPrefix := app.Group("/apis")
-		{
-			apis.TestServices(registerPrefix, services)
-		}
-	}
+	} 
 }

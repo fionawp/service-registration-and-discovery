@@ -13,8 +13,26 @@ import (
 	"time"
 )
 
+type HttpServer struct {
+	engine *gin.Engine
+}
+
+func InitHttpServer() *HttpServer{
+	myEngine := gin.Default()
+	return &HttpServer {
+		engine: myEngine,
+	}
+}
+
+func (e *HttpServer) GetEngine() *gin.Engine {
+	return e.engine
+}
+
 // Start the REST API server using the configuration provided
-func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine, error) {
+func (e *HttpServer) StartHttpServer(myServer MyServer, services *AvailableSevers) error{
+	if e.engine == nil {
+		return errors.New("please init http server")
+	}
 	gm := myServer.GinMode
 	ip := myServer.Ip
 	serviceName := myServer.ServiceName
@@ -22,22 +40,22 @@ func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine,
 
 	if ip == "" {
 		log.Println("empty ip")
-		return nil, errors.New("empty ip")
+		return errors.New("empty ip")
 	}
 
 	if serviceName == "" {
 		log.Println("empty serviceName")
-		return nil, errors.New("empty serviceName")
+		return errors.New("empty serviceName")
 	}
 
 	if port == "" {
 		log.Println("empty port")
-		return nil, errors.New("empty port")
+		return errors.New("empty port")
 	}
 
 	if myServer.ConsulHost == "" {
 		log.Println("empty consulHost")
-		return nil, errors.New("empty consulHost")
+		return errors.New("empty consulHost")
 	}
 
 	httpServerMode := gm.String()
@@ -48,7 +66,7 @@ func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine,
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	app := gin.Default()
+	app := e.engine
 	app.GET("/user/:name", func(c *gin.Context) {
 		name := c.Param("name")
 		c.String(http.StatusOK, "Hello %s", name)
@@ -88,10 +106,10 @@ func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine,
 	err := app.Run(fmt.Sprintf("%s:%s", ip, port))
 	if err != nil {
 		log.Println(err.Error())
-		return app, err
+		return err
 	}
 	log.Printf("Starting http server at %s:%s...\n", ip, port)
-	return app, nil
+	return nil
 }
 
 //heartbeat ticker
@@ -159,6 +177,6 @@ func Reporter(app *gin.Engine) {
 			hsw.Stop()
 		}
 	}()
-	
+
 	app.GET("/metrics", gin.WrapH(r.HTTPHandler()))
 }

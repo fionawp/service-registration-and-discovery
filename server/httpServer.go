@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"github.com/fionawp/service-registration-and-discovery/consulStruct"
 	"github.com/gin-gonic/gin"
+	"github.com/uber-go/tally"
+	promreporter "github.com/uber-go/tally/prometheus"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -50,6 +53,7 @@ func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine,
 		name := c.Param("name")
 		c.String(http.StatusOK, "Hello %s", name)
 	})
+	Reporter(app)
 
 	thisServer := consulStruct.ServerInfo{
 		ServiceName: serviceName,
@@ -81,7 +85,7 @@ func StartHttpServer(myServer MyServer, services *AvailableSevers) (*gin.Engine,
 	timeTicker(6, func() {
 		services.PullServices(myServer)
 	})
-	err := app.Run(fmt.Sprintf("%s:%s",ip, port))
+	err := app.Run(fmt.Sprintf("%s:%s", ip, port))
 	if err != nil {
 		log.Println(err.Error())
 		return app, err
@@ -101,4 +105,60 @@ func timeTicker(interval int, callback func()) {
 			}
 		}
 	}()
+}
+
+func Reporter(app *gin.Engine) {
+	r := promreporter.NewReporter(promreporter.Options{})
+
+	// Note: `promreporter.DefaultSeparator` is "_".
+	// Prometheus doesnt like metrics with "." or "-" in them.
+	scope, closer := tally.NewRootScope(tally.ScopeOptions{
+		Prefix:         "my_service",
+		Tags:           map[string]string{},
+		CachedReporter: r,
+		Separator:      promreporter.DefaultSeparator,
+	}, 1*time.Second)
+	defer closer.Close()
+
+	counter := scope.Tagged(map[string]string{
+		"fiona": "my test",
+	}).Counter("test_counter")
+
+	gauge := scope.Tagged(map[string]string{
+		"xiuxiu": "shi yi shi",
+	}).Gauge("test_gauge")
+
+	timer := scope.Tagged(map[string]string{
+		"hello": "hello",
+	}).Timer("test_timer_summary")
+
+	histogram := scope.Tagged(map[string]string{
+		"hello": "hello1",
+	}).Histogram("test_histogram", tally.DefaultBuckets)
+
+	go func() {
+		for {
+			counter.Inc(1)
+			time.Sleep(time.Second)
+		}
+	}()
+
+	go func() {
+		for {
+			gauge.Update(rand.Float64() * 1000)
+			time.Sleep(time.Second)
+		}
+	}()
+
+	go func() {
+		for {
+			tsw := timer.Start()
+			hsw := histogram.Start()
+			time.Sleep(time.Duration(rand.Float64() * float64(time.Second)))
+			tsw.Stop()
+			hsw.Stop()
+		}
+	}()
+	
+	app.GET("/metrics", gin.WrapH(r.HTTPHandler()))
 }
